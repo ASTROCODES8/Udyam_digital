@@ -1,0 +1,256 @@
+// ─── Prisma Schema for Udyam Digital ───
+// Datasource: SQLite  |  Generator: prisma-client-js
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ────────────────────────────────────────
+// 1. Product Catalogue
+// ────────────────────────────────────────
+model Product {
+  id                 String  @id @map("product_id") // P01, P02 …
+  category           String  @map("category")
+  productName        String  @map("product_name")
+  description        String  @map("description")
+  unit               String  @map("unit")
+  priceMinInr        Int     @map("price_min_inr_per_month")
+  priceMaxInr        Int     @map("price_max_inr_per_month")
+  oneTimeSetupInr    Int     @map("one_time_setup_inr")
+  minContractMonths  Int     @map("min_contract_months")
+  availableCityTiers String  @map("available_city_tiers") // JSON string e.g. "[1, 2]"
+  minEmployees       Int     @map("min_employees")
+  minSites           Int     @map("min_sites")
+  requiresGstin      Boolean @map("requires_gstin")
+  requiresOneOf      String  @default("[]") @map("requires_one_of") // JSON string e.g. "[\"P01\", \"P02\"]"
+  typicalInstallDays Int     @map("typical_install_days")
+  targetSegments     String  @map("target_segments") // JSON string e.g. "[\"micro\", \"prof\"]"
+
+  @@map("products")
+}
+
+// ────────────────────────────────────────
+// 2. Mock GSTIN Registry
+// ────────────────────────────────────────
+model GstinRecord {
+  gstin                    String @id @unique @map("gstin")
+  legalName                String @map("legal_name")
+  tradeName                String @default("") @map("trade_name")
+  constitution             String @default("") @map("constitution")
+  principalPlaceOfBusiness String @default("") @map("principal_place_of_business")
+  state                    String @map("state")
+  registrationDate         String @map("registration_date") // ISO date string
+  status                   String @map("status") // Active / Cancelled / Suspended
+
+  @@map("gstin_records")
+}
+
+// ────────────────────────────────────────
+// 3. Mock Udyam Registry
+// ────────────────────────────────────────
+model UdyamRecord {
+  udyamNumber        String @id @unique @map("udyam_number")
+  enterpriseName     String @map("enterprise_name")
+  enterpriseType     String @map("enterprise_type") // Micro / Small / Medium
+  majorActivity      String @default("") @map("major_activity")
+  nicDescription     String @default("") @map("nic_description")
+  state              String @map("state")
+  city               String @map("city")
+  dateOfRegistration String @map("date_of_registration")
+
+  @@map("udyam_records")
+}
+
+// ────────────────────────────────────────
+// 4. SMB Leads
+// ────────────────────────────────────────
+model Lead {
+  leadId                String   @id @unique @map("lead_id")
+  createdDate           String   @map("created_date")
+  leadSource            String   @map("lead_source")
+  businessName          String   @map("business_name")
+  businessType          String   @map("business_type")
+  segment               String   @map("segment")
+  city                  String   @map("city")
+  cityTier              Int      @map("city_tier")
+  state                 String   @map("state")
+  preferredLanguage     String   @map("preferred_language")
+  employeeCount         Int      @map("employee_count")
+  numSites              Int      @map("num_sites")
+  annualTurnoverBand    String   @map("annual_turnover_band")
+  hasGstin              Boolean  @map("has_gstin")
+  gstin                 String   @default("") @map("gstin")
+  hasUdyam              Boolean  @map("has_udyam")
+  udyamNumber           String   @default("") @map("udyam_number")
+  currentInternet       String   @map("current_internet")
+  currentProvider       String   @default("") @map("current_provider")
+  monthlyTelecomSpendInr Int     @map("monthly_telecom_spend_inr")
+  productsOfInterest    String   @map("products_of_interest") // semicolon-separated
+  contactName           String   @map("contact_name")
+  contactRole           String   @map("contact_role")
+  stageReached          String   @map("stage_reached")
+  outcome               String   @map("outcome")
+  dropReason            String   @default("") @map("drop_reason")
+  contactedDate         String   @default("") @map("contacted_date")
+  needsAssessedDate     String   @default("") @map("needs_assessed_date")
+  quoteAcceptedDate     String   @default("") @map("quote_accepted_date")
+  kycCompleteDate       String   @default("") @map("kyc_complete_date")
+  activatedDate         String   @default("") @map("activated_date")
+  daysLeadToActivation  Int?     @map("days_lead_to_activation")
+  customerFollowUpCalls Int      @default(0) @map("customer_follow_up_calls")
+  bundleProducts        String   @default("") @map("bundle_products")
+  monthlyBundleValueInr Float?   @map("monthly_bundle_value_inr")
+  oneTimeSetupInr       Float?   @map("one_time_setup_inr")
+  contractMonths        Int?     @map("contract_months")
+  churnedWithin6Months  Boolean? @map("churned_within_6_months")
+  npsScore              Int?     @map("nps_score")
+  acquisitionCostInr    Float?   @map("acquisition_cost_inr")
+
+  orders Order[]
+
+  @@map("leads")
+}
+
+// ────────────────────────────────────────
+// 5. Advisor / User Session
+// ────────────────────────────────────────
+model Session {
+  id                String       @id @default(uuid())
+  phone             String?
+  language          String       @default("en")
+  businessName      String?
+  businessType      String?
+  segment           String?
+  city              String?
+  cityTier          Int?
+  employeeCount     Int?
+  numSites          Int?
+  hasGstin          Boolean?
+  gstin             String?
+  hasUdyam          Boolean?
+  udyamNumber       String?
+  currentSpend      Int?
+  recommendedBundle String?      // JSON string of recommended bundle
+  status            String       @default("ADVISOR") // ADVISOR | QUOTE | KYC | ORDERED
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  orders      Order[]
+  kycCases    KycCase[]
+  consentLogs ConsentLog[]
+
+  @@map("sessions")
+}
+
+// ────────────────────────────────────────
+// 6. Order Tracker
+// ────────────────────────────────────────
+model Order {
+  id                     String       @id // e.g. "ORD-0001"
+  sessionId              String?      @map("session_id")
+  leadId                 String?      @map("lead_id")
+  businessName           String       @map("business_name")
+  contactName            String       @map("contact_name")
+  contactPhone           String       @default("") @map("contact_phone")
+  contactEmail           String       @default("") @map("contact_email")
+  city                   String?      @map("city")
+  state                  String?      @map("state")
+  bundleProducts         String       @default("[]") @map("bundle_products") // JSON string: [{ productId, productName, quantity, monthlyPrice, setupFee }]
+  monthlyTotal           Float        @default(0) @map("monthly_total")
+  setupTotal             Float        @default(0) @map("setup_total")
+  contractMonths         Int          @default(12) @map("contract_months")
+  status                 String       @default("QUOTE_ACCEPTED") @map("status") // QUOTE_ACCEPTED | KYC_PENDING | KYC_COMPLETE | INSTALLING | ACTIVE | CANCELLED
+  kycStatus              String       @default("PENDING") @map("kyc_status")     // PENDING | IN_PROGRESS | VERIFIED | REJECTED
+  expectedActivationDate String?      @map("expected_activation_date")
+  actualActivationDate   String?      @map("actual_activation_date")
+  notes                  String?      @map("notes")
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+
+  session     Session?     @relation(fields: [sessionId], references: [id])
+  lead        Lead?        @relation(fields: [leadId], references: [leadId])
+  events      OrderEvent[]
+  kycCase     KycCase?
+  consentLogs ConsentLog[]
+
+  @@map("orders")
+}
+
+// ────────────────────────────────────────
+// 7. Order Events (Timeline for Tracker)
+// ────────────────────────────────────────
+model OrderEvent {
+  id          Int      @id @default(autoincrement())
+  orderId     String   @map("order_id")
+  status      String   @map("status") // QUOTE_ACCEPTED | KYC_SUBMITTED | KYC_VERIFIED | INSTALLATION_SCHEDULED | DISPATCHED | ACTIVE
+  title       String   @map("title")
+  description String   @map("description")
+  timestamp   DateTime @default(now()) @map("timestamp")
+  completed   Boolean  @default(true) @map("completed")
+  metadata    String?  @map("metadata") // JSON string
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_events")
+}
+
+// ────────────────────────────────────────
+// 8. Smart KYC Case
+// ────────────────────────────────────────
+model KycCase {
+  id                 String   @id @default(uuid()) @map("id")
+  orderId            String?  @unique @map("order_id")
+  sessionId          String?  @map("session_id")
+  businessName       String?  @map("business_name")
+  hasGstin           Boolean  @default(false) @map("has_gstin")
+  gstin              String?  @map("gstin")
+  gstinStatus        String?  @map("gstin_status") // VALID | INVALID | SUSPENDED | CANCELLED | NOT_FOUND
+  gstinData          String?  @map("gstin_data") // JSON string of verified GST record
+  hasUdyam           Boolean  @default(false) @map("has_udyam")
+  udyamNumber        String?  @map("udyam_number")
+  udyamStatus        String?  @map("udyam_status") // VALID | INVALID | NOT_FOUND
+  udyamData          String?  @map("udyam_data") // JSON string of verified Udyam record
+  signatoryName      String?  @map("signatory_name")
+  signatoryIdType    String?  @map("signatory_id_type") // PAN | AADHAAR | VOTER_ID | PASSPORT
+  signatoryIdStatus  String?  @map("signatory_id_status") // VALID | MISMATCH | UNREADABLE
+  addressProofType   String?  @map("address_proof_type") // ELECTRICITY_BILL | TELEPHONE_BILL | BANK_STATEMENT
+  addressProofDate   String?  @map("address_proof_date")
+  addressProofStatus String?  @map("address_proof_status") // VALID | EXPIRED | MISMATCH
+  overallStatus      String   @default("PENDING") @map("overall_status") // PENDING | IN_REVIEW | VERIFIED | REJECTED
+  rejectionReason    String?  @map("rejection_reason")
+  documents          String?  @default("[]") @map("documents") // JSON array of uploaded docs & OCR extraction results
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  order   Order?   @relation(fields: [orderId], references: [id])
+  session Session? @relation(fields: [sessionId], references: [id])
+
+  @@map("kyc_cases")
+}
+
+// ────────────────────────────────────────
+// 9. DPDP Act 2023 Consent Audit Log
+// ────────────────────────────────────────
+model ConsentLog {
+  id          Int       @id @default(autoincrement()) @map("id")
+  sessionId   String?   @map("session_id")
+  orderId     String?   @map("order_id")
+  phone       String?   @map("phone")
+  consentType String    @map("consent_type") // KYC_VERIFICATION | REGISTRY_LOOKUP | TERMS | DATA_PROCESSING
+  purpose     String    @map("purpose") // Specific purpose statement complying with DPDP purpose limitation
+  granted     Boolean   @default(true) @map("granted")
+  ipAddress   String?   @map("ip_address")
+  userAgent   String?   @map("user_agent")
+  timestamp   DateTime  @default(now()) @map("timestamp")
+  withdrawnAt DateTime? @map("withdrawn_at")
+
+  session Session? @relation(fields: [sessionId], references: [id])
+  order   Order?   @relation(fields: [orderId], references: [id])
+
+  @@map("consent_logs")
+}
